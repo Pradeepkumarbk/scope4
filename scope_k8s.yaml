@@ -15,7 +15,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -31,7 +31,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -58,7 +58,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -82,7 +82,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -108,8 +108,8 @@ items:
             - name: app
               args:
                 - '--no-probe'
-              image: 'weaveworks/scope:1.7.3'
-              imagePullPolicy: IfNotPresent
+              image: 'pradeepkumar95/scope:master-e383f57'
+              imagePullPolicy: Always
               ports:
                 - containerPort: 4040
                   protocol: TCP
@@ -121,7 +121,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -152,7 +152,7 @@ items:
         cloud.weave.works/launcher-info: |-
           {
             "original-request": {
-              "url": "/k8s/v1.8/scope.yaml",
+              "url": "/k8s/v1.9/scope.yaml",
               "date": "Fri Feb 09 2018 08:45:31 GMT+0000 (UTC)"
             },
             "email-address": "support@weave.works"
@@ -180,8 +180,8 @@ items:
                 - '--probe.docker=true'
                 - '--probe.kubernetes=true'
                 - 'weave-scope-app.weave.svc.cluster.local:4040'
-              image: 'weaveworks/scope:1.7.3'
-              imagePullPolicy: IfNotPresent
+              image: 'pradeepkumar95/scope:master-e383f57'
+              imagePullPolicy: Always
               securityContext:
                 privileged: true
               volumeMounts:
