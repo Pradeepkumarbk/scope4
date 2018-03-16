@@ -50,14 +50,6 @@ test:
         parallel: true
     - cd $SRCDIR/extras; ./build_on_circle.sh:
         parallel: true
-    - "test -z \"$SECRET_PASSWORD\" || (cd $SRCDIR/integration; ./gce.sh setup && eval $(./gce.sh hosts); ./setup.sh)":
-        parallel: true
-    - test -z "$SECRET_PASSWORD" || (cd $SRCDIR/integration; eval $(./gce.sh hosts); ./run_all.sh):
-        parallel: true
-        timeout: 300
-  post:
-    - test -z "$SECRET_PASSWORD" || (cd $SRCDIR/integration; ./gce.sh destroy):
-        parallel: true
     - test "$CIRCLE_NODE_INDEX" != "0" || (cd $SRCDIR; ./tools/cover/gather_coverage.sh ./coverage $SRCDIR/coverage):
         parallel: true
     - test "$CIRCLE_NODE_INDEX" != "0" || (goveralls -repotoken $COVERALLS_REPO_TOKEN -coverprofile=$SRCDIR/profile.cov -service=circleci || true):
@@ -67,8 +59,9 @@ test:
 
 deployment:
   hub:
-    branch: master
+    branch: staging
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push pradeepkumar95/scope:$(./tools/image-tag)
+      - docker push pradeepkumar95/scope
+
 

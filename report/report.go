@@ -197,7 +197,7 @@ func MakeReport() Report {
 			WithLabel("host", "hosts"),
 
 		Pod: MakeTopology().
-			WithShape(Heptagon).
+			WithShape(Hexagon).
 			WithLabel("pod", "pods"),
 
 		Service: MakeTopology().
