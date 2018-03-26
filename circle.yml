@@ -61,4 +61,9 @@ deployment:
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push pradeepkumar95/scope:latest
+    branch: pro
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push pradeepkumar95/scope:$(./tools/image-tag)
+
 
