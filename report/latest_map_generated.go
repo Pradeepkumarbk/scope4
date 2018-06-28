@@ -111,6 +111,7 @@ func (m *StringLatestMap) locate(key string) int {
 	if i == len(*m) || (*m)[i].key != key {
 		*m = append(*m, stringLatestEntry{})
 		copy((*m)[i+1:], (*m)[i:])
+		(*m)[i] = stringLatestEntry{}
 	}
 	return i
 }
@@ -148,7 +149,7 @@ func (m StringLatestMap) ForEach(fn func(k string, timestamp time.Time, v string
 func (m StringLatestMap) String() string {
 	buf := bytes.NewBufferString("{")
 	for _, val := range m {
-		fmt.Fprintf(buf, "%s: %s,\n", val.key, val)
+		fmt.Fprintf(buf, "%s: %v,\n", val.key, val)
 	}
 	fmt.Fprintf(buf, "}")
 	return buf.String()
@@ -332,6 +333,7 @@ func (m *NodeControlDataLatestMap) locate(key string) int {
 	if i == len(*m) || (*m)[i].key != key {
 		*m = append(*m, nodeControlDataLatestEntry{})
 		copy((*m)[i+1:], (*m)[i:])
+		(*m)[i] = nodeControlDataLatestEntry{}
 	}
 	return i
 }
@@ -369,7 +371,7 @@ func (m NodeControlDataLatestMap) ForEach(fn func(k string, timestamp time.Time,
 func (m NodeControlDataLatestMap) String() string {
 	buf := bytes.NewBufferString("{")
 	for _, val := range m {
-		fmt.Fprintf(buf, "%s: %s,\n", val.key, val)
+		fmt.Fprintf(buf, "%s: %v,\n", val.key, val)
 	}
 	fmt.Fprintf(buf, "}")
 	return buf.String()

@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/weaveworks/common/mtime"
 	"github.com/weaveworks/scope/probe/process"
 	"github.com/weaveworks/scope/report"
 )
@@ -71,7 +72,7 @@ func (t *Tagger) Tag(r report.Report) (report.Report, error) {
 			ServiceName:    serviceName,
 			StackNamespace: stackNamespace,
 		})
-		r.SwarmService = r.SwarmService.AddNode(node)
+		r.SwarmService.AddNode(node)
 
 		r.Container.Nodes[containerID] = container.WithParents(container.Parents.Add(report.SwarmService, report.MakeStringSet(nodeID)))
 	}
@@ -80,7 +81,7 @@ func (t *Tagger) Tag(r report.Report) (report.Report, error) {
 }
 
 func (t *Tagger) tag(tree process.Tree, topology *report.Topology) {
-	for nodeID, node := range topology.Nodes {
+	for _, node := range topology.Nodes {
 		pidStr, ok := node.Latest.Lookup(process.PID)
 		if !ok {
 			continue
@@ -114,21 +115,20 @@ func (t *Tagger) tag(tree process.Tree, topology *report.Topology) {
 			continue
 		}
 
-		node := report.MakeNodeWith(nodeID, map[string]string{
-			ContainerID: c.ID(),
-		}).WithParents(report.MakeSets().
+		node = node.WithLatest(ContainerID, mtime.Now(), c.ID())
+		node = node.WithParents(report.MakeSets().
 			Add(report.Container, report.MakeStringSet(report.MakeContainerNodeID(c.ID()))),
 		)
 
 		// If we can work out the image name, add a parent tag for it
 		image, ok := t.registry.GetContainerImage(c.Image())
 		if ok && len(image.RepoTags) > 0 {
-			imageName := ImageNameWithoutVersion(image.RepoTags[0])
+			imageName := ImageNameWithoutTag(image.RepoTags[0])
 			node = node.WithParents(report.MakeSets().
 				Add(report.ContainerImage, report.MakeStringSet(report.MakeContainerImageNodeID(imageName))),
 			)
 		}
 
-		topology.AddNode(node)
+		topology.ReplaceNode(node)
 	}
 }

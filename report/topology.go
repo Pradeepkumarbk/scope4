@@ -13,7 +13,7 @@ type Topology struct {
 	Label             string            `json:"label,omitempty"`
 	LabelPlural       string            `json:"label_plural,omitempty"`
 	Nodes             Nodes             `json:"nodes"`
-	Controls          Controls          `json:"controls,omitempty"`
+	Controls          Controls          `json:"controls,omitempty" deepequal:"nil==empty"`
 	MetadataTemplates MetadataTemplates `json:"metadata_templates,omitempty"`
 	MetricTemplates   MetricTemplates   `json:"metric_templates,omitempty"`
 	TableTemplates    TableTemplates    `json:"table_templates,omitempty"`
@@ -102,15 +102,20 @@ func (t Topology) WithLabel(label, labelPlural string) Topology {
 
 // AddNode adds node to the topology under key nodeID; if a
 // node already exists for this key, nmd is merged with that node.
-// The same topology is returned to enable chaining.
 // This method is different from all the other similar methods
 // in that it mutates the Topology, to solve issues of GC pressure.
-func (t Topology) AddNode(node Node) Topology {
+func (t Topology) AddNode(node Node) {
 	if existing, ok := t.Nodes[node.ID]; ok {
 		node = node.Merge(existing)
 	}
 	t.Nodes[node.ID] = node
-	return t
+}
+
+// ReplaceNode adds node to the topology under key nodeID; if a
+// node already exists for this key, node replaces that node.
+// Like AddNode, it mutates the Topology
+func (t Topology) ReplaceNode(node Node) {
+	t.Nodes[node.ID] = node
 }
 
 // GetShape returns the current topology shape, or the default if there isn't one.
@@ -176,6 +181,9 @@ func (n Nodes) Copy() Nodes {
 func (n Nodes) Merge(other Nodes) Nodes {
 	if len(other) > len(n) {
 		n, other = other, n
+	}
+	if len(other) == 0 {
+		return n
 	}
 	cp := n.Copy()
 	for k, v := range other {

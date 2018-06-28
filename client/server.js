@@ -7,7 +7,7 @@ const HttpProxyRules = require('http-proxy-rules');
 const app = express();
 
 const BACKEND_HOST = process.env.BACKEND_HOST || 'localhost';
-const BACKEND_PORT = process.env.BACKEND_PORT || '4040';
+
 /*
 *
 * Proxy requests to:
@@ -17,7 +17,7 @@ const BACKEND_PORT = process.env.BACKEND_PORT || '4040';
 
 const backendProxy = httpProxy.createProxy({
   ws: true,
-  target: `http://${BACKEND_HOST}:${BACKEND_PORT}`,
+  target: `http://${BACKEND_HOST}:4040`,
 });
 backendProxy.on('error', err => console.error('Proxy error', err));
 app.all('/api*', backendProxy.web.bind(backendProxy));

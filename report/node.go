@@ -14,11 +14,11 @@ type Node struct {
 	Topology       string                   `json:"topology,omitempty"`
 	Counters       Counters                 `json:"counters,omitempty"`
 	Sets           Sets                     `json:"sets,omitempty"`
-	Adjacency      IDList                   `json:"adjacency"`
+	Adjacency      IDList                   `json:"adjacency,omitempty"`
 	Controls       NodeControls             `json:"controls,omitempty"`
 	LatestControls NodeControlDataLatestMap `json:"latestControls,omitempty"`
 	Latest         StringLatestMap          `json:"latest,omitempty"`
-	Metrics        Metrics                  `json:"metrics,omitempty"`
+	Metrics        Metrics                  `json:"metrics,omitempty" deepequal:"nil==empty"`
 	Parents        Sets                     `json:"parents,omitempty"`
 	Children       NodeSet                  `json:"children,omitempty"`
 }

@@ -6,39 +6,44 @@ import (
 	"strings"
 	"time"
 
-	"github.com/weaveworks/common/mtime"
 	"github.com/weaveworks/scope/common/xfer"
 )
 
 // Names of the various topologies.
 const (
-	Endpoint       = "endpoint"
-	Process        = "process"
-	Container      = "container"
-	Pod            = "pod"
-	Service        = "service"
-	Deployment     = "deployment"
-	ReplicaSet     = "replica_set"
-	DaemonSet      = "daemon_set"
-	StatefulSet    = "stateful_set"
-	CronJob        = "cron_job"
-	Namespace      = "namespace"
-	ContainerImage = "container_image"
-	Host           = "host"
-	Overlay        = "overlay"
-	ECSService     = "ecs_service"
-	ECSTask        = "ecs_task"
-	SwarmService   = "swarm_service"
+	Endpoint              = "endpoint"
+	Process               = "process"
+	Container             = "container"
+	Pod                   = "pod"
+	Service               = "service"
+	Deployment            = "deployment"
+	ReplicaSet            = "replica_set"
+	DaemonSet             = "daemon_set"
+	StatefulSet           = "stateful_set"
+	CronJob               = "cron_job"
+	Namespace             = "namespace"
+	ContainerImage        = "container_image"
+	Host                  = "host"
+	Overlay               = "overlay"
+	ECSService            = "ecs_service"
+	ECSTask               = "ecs_task"
+	SwarmService          = "swarm_service"
+	PersistentVolume      = "persistent_volume"
+	PersistentVolumeClaim = "persistent_volume_claim"
+	StorageClass          = "storage_class"
 
 	// Shapes used for different nodes
-	Circle   = "circle"
-	Triangle = "triangle"
-	Square   = "square"
-	Pentagon = "pentagon"
-	Hexagon  = "hexagon"
-	Heptagon = "heptagon"
-	Octagon  = "octagon"
-	Cloud    = "cloud"
+	Circle         = "circle"
+	Triangle       = "triangle"
+	Square         = "square"
+	Pentagon       = "pentagon"
+	Hexagon        = "hexagon"
+	Heptagon       = "heptagon"
+	Octagon        = "octagon"
+	Cloud          = "cloud"
+	Cylinder       = "cylinder"
+	DottedCylinder = "dottedcylinder"
+	StorageSheet   = "storagesheet"
 
 	// Used when counting the number of containers
 	ContainersKey = "containers"
@@ -63,6 +68,9 @@ var topologyNames = []string{
 	ECSTask,
 	ECSService,
 	SwarmService,
+	PersistentVolume,
+	PersistentVolumeClaim,
+	StorageClass,
 }
 
 // Report is the core data type. It's produced by probes, and consumed and
@@ -150,6 +158,20 @@ type Report struct {
 	// overlaid on the infrastructure. The information is scraped by polling
 	// their status endpoints. Edges are present.
 	Overlay Topology
+
+	// Persistent Volume nodes represent all Kubernetes Persistent Volumes running on hosts running probes.
+	// Metadata is limited for now, more to come later.
+	PersistentVolume Topology
+
+	// Persistent Volume Claim nodes represent all Kubernetes Persistent Volume Claims running on hosts running probes.
+	// Metadata is limited for now, more to come later.
+	PersistentVolumeClaim Topology
+
+	// Storage Class represent all kubernetes Storage Classes on hosts running probes.
+	// Metadata is limited for now, more to come later.
+	StorageClass Topology
+
+	DNS DNSRecords
 
 	// Sampling data for this report.
 	Sampling Sampling
@@ -242,6 +264,20 @@ func MakeReport() Report {
 			WithShape(Heptagon).
 			WithLabel("service", "services"),
 
+		PersistentVolume: MakeTopology().
+			WithShape(Cylinder).
+			WithLabel("persistent volume", "persistent volumes"),
+
+		PersistentVolumeClaim: MakeTopology().
+			WithShape(DottedCylinder).
+			WithLabel("persistent volume claim", "persistent volume claims"),
+
+		StorageClass: MakeTopology().
+			WithShape(StorageSheet).
+			WithLabel("storage class", "storage classes"),
+
+		DNS: DNSRecords{},
+
 		Sampling: Sampling{},
 		Window:   0,
 		Plugins:  xfer.MakePluginSpecs(),
@@ -252,8 +288,10 @@ func MakeReport() Report {
 // Copy returns a value copy of the report.
 func (r Report) Copy() Report {
 	newReport := Report{
+		DNS:      r.DNS.Copy(),
 		Sampling: r.Sampling,
 		Window:   r.Window,
+		Shortcut: r.Shortcut,
 		Plugins:  r.Plugins.Copy(),
 		ID:       fmt.Sprintf("%d", rand.Int63()),
 	}
@@ -267,6 +305,7 @@ func (r Report) Copy() Report {
 // original is not modified.
 func (r Report) Merge(other Report) Report {
 	newReport := r.Copy()
+	newReport.DNS = newReport.DNS.Merge(other.DNS)
 	newReport.Sampling = newReport.Sampling.Merge(other.Sampling)
 	newReport.Window = newReport.Window + other.Window
 	newReport.Plugins = newReport.Plugins.Merge(other.Plugins)
@@ -338,6 +377,12 @@ func (r *Report) topology(name string) *Topology {
 		return &r.ECSService
 	case SwarmService:
 		return &r.SwarmService
+	case PersistentVolume:
+		return &r.PersistentVolume
+	case PersistentVolumeClaim:
+		return &r.PersistentVolumeClaim
+	case StorageClass:
+		return &r.StorageClass
 	}
 	return nil
 }
@@ -371,7 +416,7 @@ func (r Report) Validate() error {
 //
 // This for now creates node's LatestControls from Controls.
 func (r Report) Upgrade() Report {
-	return r.upgradeLatestControls().upgradePodNodes().upgradeNamespaces()
+	return r.upgradeLatestControls().upgradePodNodes().upgradeNamespaces().upgradeDNSRecords()
 }
 
 func (r Report) upgradeLatestControls() Report {
@@ -447,7 +492,7 @@ func (r Report) upgradeNamespaces() Report {
 	namespaces := map[string]struct{}{}
 	for _, t := range []Topology{r.Pod, r.Service, r.Deployment, r.DaemonSet, r.StatefulSet, r.CronJob} {
 		for _, n := range t.Nodes {
-			if state, ok := n.Latest.Lookup(KubernetesState); ok && state == KubernetesStateDeleted {
+			if state, ok := n.Latest.Lookup(KubernetesState); ok && state == "deleted" {
 				continue
 			}
 			if namespace, ok := n.Latest.Lookup(KubernetesNamespace); ok {
@@ -469,32 +514,31 @@ func (r Report) upgradeNamespaces() Report {
 	return r
 }
 
-// BackwardCompatible returns a new backward-compatible report.
-//
-// This for now creates node's Controls from LatestControls.
-func (r Report) BackwardCompatible() Report {
-	now := mtime.Now()
-	cp := r.Copy()
-	cp.WalkTopologies(func(topology *Topology) {
-		n := Nodes{}
-		for name, node := range topology.Nodes {
-			var controls []string
-			node.LatestControls.ForEach(func(k string, _ time.Time, v NodeControlData) {
-				if !v.Dead {
-					controls = append(controls, k)
+func (r Report) upgradeDNSRecords() Report {
+	if len(r.DNS) > 0 {
+		return r
+	}
+	dns := make(DNSRecords)
+	for endpointID, endpoint := range r.Endpoint.Nodes {
+		_, addr, _, ok := ParseEndpointNodeID(endpointID)
+		snoopedNames, foundS := endpoint.Sets.Lookup(SnoopedDNSNames)
+		reverseNames, foundR := endpoint.Sets.Lookup(ReverseDNSNames)
+		if ok && (foundS || foundR) {
+			// Add address and names to report-level map
+			if existing, found := dns[addr]; found {
+				// Optimise the expected case that they are equal
+				if existing.Forward.Equal(snoopedNames) && existing.Reverse.Equal(reverseNames) {
+					continue
 				}
-			})
-			if len(controls) > 0 {
-				node.Controls = NodeControls{
-					Timestamp: now,
-					Controls:  MakeStringSet(controls...),
-				}
+				// Not equal - merge this node's data into existing data,
+				snoopedNames = snoopedNames.Merge(existing.Forward)
+				reverseNames = reverseNames.Merge(existing.Reverse)
 			}
-			n[name] = node
+			dns[addr] = DNSRecord{Forward: snoopedNames, Reverse: reverseNames}
 		}
-		topology.Nodes = n
-	})
-	return cp
+	}
+	r.DNS = dns
+	return r
 }
 
 // Sampling describes how the packet data sources for this report were
