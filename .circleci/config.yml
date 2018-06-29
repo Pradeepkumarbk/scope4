@@ -4,13 +4,13 @@ jobs:
     branches:
       ignore:
         - gh-pages
-    machine: 
-      enabled: true
+    machine: true
+      #enabled: true
     environment:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       SCOPE_UI_BUILD: $HOME/docker/scope_ui_build.tar
       IMAGES: scope cloud-agent
-    working_directory: /go/src/github.com/weaveworks/scope
+    working_directory: ~/go/src/github.com/weaveworks/scope
     steps:
       - checkout
       - run:
