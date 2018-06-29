@@ -7,6 +7,9 @@ jobs:
     machine: true
       #enabled: true
     environment:
+      #GOPATH: /home/ubuntu
+      #SRCDIR: /home/ubuntu/src/github.com/weaveworks/scope
+      PATH: $PATH:$HOME/.local/bin
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       SCOPE_UI_BUILD: $HOME/docker/scope_ui_build.tar
       IMAGES: scope cloud-agent
