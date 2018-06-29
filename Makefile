@@ -59,7 +59,7 @@ docker/%: %
 %.tar: docker/Dockerfile.%
 	$(SUDO) docker build --build-arg=revision=$(GIT_REVISION) -t $(DOCKERHUB_USER)/$* -f $< docker/
 	$(SUDO) docker tag $(DOCKERHUB_USER)/$* $(DOCKERHUB_USER)/$*:$(IMAGE_TAG)
-	$(SUDO) docker save $(DOCKERHUB_USER)/$*:ci > $@
+	$(SUDO) docker save $(DOCKERHUB_USER)/$*:latest > $@
 
 $(CLOUD_AGENT_EXPORT): docker/Dockerfile.cloud-agent docker/$(SCOPE_EXE) docker/weave docker/weaveutil
 
