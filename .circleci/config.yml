@@ -6,10 +6,6 @@ jobs:
         - gh-pages
     machine: 
       enabled: true
-    pre:
-      - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
-    services:
-      - docker
     environment:
       - GOPATH: /home/ubuntu
       - SRCDIR: /home/ubuntu/src/github.com/weaveworks/scope
@@ -21,6 +17,7 @@ jobs:
       - checkout
       - run:
           command: | 
+            curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
             pip install --upgrade requests
             "~/docker"
             sudo apt-get update &&
