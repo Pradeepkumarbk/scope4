@@ -9,7 +9,7 @@ jobs:
     environment:
       #GOPATH: /home/ubuntu
       #SRCDIR: /home/ubuntu/src/github.com/weaveworks/scope
-      PATH: $PATH:$HOME/.local/bin
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       SCOPE_UI_BUILD: $HOME/docker/scope_ui_build.tar
       IMAGES: scope cloud-agent
@@ -17,8 +17,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: | 
-            export $PATH
+          command: | ss
             curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
             pip install --upgrade requests
             sudo apt-get update &&
