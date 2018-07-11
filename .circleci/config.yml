@@ -17,7 +17,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: | ss
+          command: | 
             curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
             pip install --upgrade requests
             sudo apt-get update &&
