@@ -1,0 +1,60 @@
+version: 2
+jobs:
+  build:
+    branches:
+      ignore:
+        - gh-pages
+    machine: true
+    environment:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      SCOPE_UI_BUILD: $HOME/docker/scope_ui_build.tar
+      IMAGES: scope cloud-agent
+    working_directory: ~/go/src/github.com/weaveworks/scope
+    steps:
+      - checkout
+      - run:
+          command: | 
+            sudo curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+            pip install --upgrade requests
+            sudo apt-get update &&
+            sudo apt-get install jq pv &&
+            sudo chmod a+wr --recursive /usr/local/go/pkg &&
+            sudo chown ubuntu:ubuntu "$HOME/.bashrc.backup"
+            (curl https://sdk.cloud.google.com | bash) &&
+            (test -z "$SECRET_PASSWORD" || bin/setup-circleci-secrets "$SECRET_PASSWORD") &&
+            make deps &&
+            mkdir -p $(dirname $working_directory) &&
+            cp -r $(pwd)/ $working_directory
+            "cd $working_directory/client; ../tools/rebuild-image weaveworks/scope-ui-build . Dockerfile package.json webpack.production.config.js .eslintrc .babelrc && touch $working_directory/.scope_ui_build.uptodate"
+            "cd $working_directory/backend; ../tools/rebuild-image weaveworks/scope-backend-build . Dockerfile build.sh && touch $working_directory/.scope_backend_build.uptodate"
+            test -z "$SECRET_PASSWORD" || (cd $working_directory/integration; ./gce.sh make_template):
+              parallel: false
+            sudo apt-get update && sudo apt-get install python-pip && sudo pip install awscli
+            cd $working_directory; make RM= lint:
+              parallel: true
+            cd $working_directory; COVERDIR=./coverage make RM= CODECGEN_UID=23 tests:
+              parallel: true
+            cd $working_directory; make RM= client-test static:
+              parallel: true
+            cd $working_directory; make RM= client-lint static:
+              parallel: true
+            cd $working_directory; rm -f prog/scope; if [ "$CIRCLE_NODE_INDEX" = "0" ]; then GOARCH=arm make GO_BUILD_INSTALL_DEPS= RM= prog/scope; else GOOS=darwin make GO_BUILD_INSTALL_DEPS= RM= prog/scope; fi:
+              parallel: true
+            cd $working_directory; rm -f prog/scope; make RM=:
+              parallel: true
+            cd $working_directory/extras; ./build_on_circle.sh:
+              parallel: true
+            "test -z \"$SECRET_PASSWORD\" || (cd $working_directory/integration; ./gce.sh setup && eval $(./gce.sh hosts); ./setup.sh)":
+              parallel: true
+            test -z "$SECRET_PASSWORD" || (cd $working_directory/integration; eval $(./gce.sh hosts); ./run_all.sh):
+              parallel: true
+                timeout: 300
+            test -z "$SECRET_PASSWORD" || (cd $working_directory/integration; ./gce.sh destroy):
+              parallel: true
+            test "$CIRCLE_NODE_INDEX" != "0" || (cd $working_directory; ./tools/cover/gather_coverage.sh ./coverage $working_directory/coverage):
+              parallel: true
+            test "$CIRCLE_NODE_INDEX" != "0" || (goveralls -repotoken $COVERALLS_REPO_TOKEN -coverprofile=$working_directory/profile.cov -service=circleci || true):
+              parallel: true
+            test "$CIRCLE_NODE_INDEX" != "0" || (cd $working_directory; cp */*.codecgen.go $CIRCLE_ARTIFACTS):
+              parallel: true
